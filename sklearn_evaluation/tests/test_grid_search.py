@@ -17,6 +17,9 @@ with open('static/sample_scores.json') as f:
 with open('static/sample_scores_2_params.json') as f:
     grid_scores_2_params = _grid_scores_from_dicts(json.loads(f.read()))
 
+with open('static/sample_scores_4_params.json') as f:
+    grid_scores_4_params = _grid_scores_from_dicts(json.loads(f.read()))
+
 # plot tests
 
 
@@ -142,6 +145,13 @@ class TestGridSearchAPI(unittest.TestCase):
         plot.grid_search(grid_scores_2_params, change=change, subset=None)
 
     @cleanup
+    def test_raise_exception_when_parameter_subset_matches_more_than_one_group(self):
+        with self.assertRaises(ValueError):
+            change = ('n_estimators', 'criterion')
+            subset = {'min_samples_split': 2}
+            plot.grid_search(grid_scores_4_params, change=change, subset=subset)
+
+    @cleanup
     def test_raise_exception_when_parameter_does_not_exist(self):
         with self.assertRaises(ValueError):
             change = ('this_is_not_a_parameter')
@@ -170,3 +180,9 @@ class TestGridSearchAPI(unittest.TestCase):
             change = 'n_estimators'
             subset = {'criterion': 'not_a_value'}
             plot.grid_search(grid_scores, change=change, subset=subset)
+
+    @cleanup
+    def test_raise_exception_when_passing_repeated_parameters(self):
+        with self.assertRaises(ValueError):
+            change = ['n_estimators', 'n_estimators']
+            plot.grid_search(grid_scores, change=change, subset=None)

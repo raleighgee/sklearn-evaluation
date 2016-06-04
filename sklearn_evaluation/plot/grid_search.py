@@ -138,6 +138,10 @@ def _grid_search_single(grid_scores, change, subset, ax, kind):
 
 
 def _grid_search_double(grid_scores, change, subset, ax, cmap):
+    # check that the two different parameters were passed
+    if len(set(change)) == 1:
+        raise ValueError('You need to pass two different parameters')
+
     # if a value in subset was passed, use it to filter the groups
     # if not use the set of parameters but remove the ones the user wants
     # to vary
@@ -167,6 +171,12 @@ def _grid_search_double(grid_scores, change, subset, ax, cmap):
 
     # group by every possible combination in change
     matrix_elements = _group_by(grid_score, _get_params_value(change))
+
+    for k, v in matrix_elements.items():
+        if len(v) > 1:
+            raise ValueError(('More than one result matched your criteria.'
+                              ' Make sure you specify parameters using change'
+                              ' and subset so only one group matches.'))
 
     # on each group there must be only one element, get it
     matrix_elements = {k: v[0] for k, v in matrix_elements.items()}
