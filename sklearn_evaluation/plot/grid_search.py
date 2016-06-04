@@ -88,9 +88,8 @@ def _grid_search_single(grid_scores, change, subset, ax, kind):
         grid_scores = _flatten_list(groups.values())
         groups = _group_by(grid_scores, _get_params_value(params))
         if not groups:
-            raise ValueError(('There wasn\'t any match with the data provided'
-                              ' check that the values in subset are'
-                              ' correct.'))
+            raise ValueError(('Your subset didn\'t match any data'
+                              ' verify that the values are correct.'))
     # if the user didn't select any values don't filter anything
     # just group the grid_scores depending on the values they
     # have for the parameters
@@ -143,34 +142,17 @@ def _grid_search_double(grid_scores, change, subset, ax, cmap):
         raise ValueError('You need to pass two different parameters')
 
     # if a value in subset was passed, use it to filter the groups
-    # if not use the set of parameters but remove the ones the user wants
-    # to vary
     if subset is not None:
         groups = _group_by(grid_scores, _get_params_value(subset.keys()))
         keys = _mapping_to_tuple_pairs(subset)
         groups = {k: v for k, v in _sorted_map_iter(groups) if k in keys}
-    else:
-        subset = list(grid_scores[0].parameters.keys())
-        for p in change:
-            try:
-                subset.remove(p)
-            except ValueError:
-                raise ValueError('{} is not a valid parameter.'.format(p))
-        groups = _group_by(grid_scores, _get_params_value(subset))
-
-    # there should be just one group at this point
-    if len(groups) > 1:
-        raise ValueError(('More than one result matched your criteria.'
-                          ' Make sure you specify parameters using change'
-                          ' and subset so only one group matches.'))
-    elif len(groups) == 0:
-        raise ValueError(('There wasn\'t any match with the data provided'
-                          ' check that the values in subset are correct.'))
-
-    grid_score = list(groups.values())[0]
+        grid_scores = _flatten_list(groups.values())
+        if not groups:
+            raise ValueError(('Your subset didn\'t match any data'
+                              ' verify that the values are correct.'))
 
     # group by every possible combination in change
-    matrix_elements = _group_by(grid_score, _get_params_value(change))
+    matrix_elements = _group_by(grid_scores, _get_params_value(change))
 
     for k, v in matrix_elements.items():
         if len(v) > 1:
