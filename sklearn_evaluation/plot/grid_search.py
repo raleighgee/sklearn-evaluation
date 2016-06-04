@@ -9,11 +9,10 @@ from ..util import (_group_by, _get_params_value, _mapping_to_tuple_pairs,
                     default_heatmap, _sorted_map_iter, _flatten_list)
 
 
-def grid_search(grid_scores, change, keep_fixed=None, ax=None, kind='line',
+def grid_search(grid_scores, change, subset=None, ax=None, kind='line',
                 cmap=None):
     """
-    Plot results from a sklearnn Grid Search by changing two parameters at most
-    and keeping the rest fixed.
+    Plot results from a sklearn grid search by changing two parameters at most.
 
     Parameters
     ----------
@@ -22,11 +21,11 @@ def grid_search(grid_scores, change, keep_fixed=None, ax=None, kind='line',
         grid_scores_ parameter)
     change : str or iterable with len<=2
         Parameter to change
-    keep_fixed : dictionary-like
-        parameter-value pairs, such values will keep fixed. You can
-        specify more than one value per parameter
+    subset : dictionary-like
+        parameter-value(s) pairs to subset from grid_scores.
         (e.g. {'n_estimartors': [1, 10]}), if None all combinations will be
-        used.
+        used. Note that when plotting two parameters, subset must match only
+        one set of parameters to be able to create the plot.
     ax: matplotlib Axes
         Axes object to draw the plot onto, otherwise uses current Axes
     kind : ['line', 'bar']
@@ -54,14 +53,14 @@ def grid_search(grid_scores, change, keep_fixed=None, ax=None, kind='line',
         cmap = default_heatmap()
 
     if isinstance(change, string_types) or len(change) == 1:
-        return _grid_search_single(grid_scores, change, keep_fixed, ax, kind)
+        return _grid_search_single(grid_scores, change, subset, ax, kind)
     elif len(change) == 2:
-        return _grid_search_double(grid_scores, change, keep_fixed, ax, cmap)
+        return _grid_search_double(grid_scores, change, subset, ax, cmap)
     else:
         raise ValueError('change must have length 1 or 2 or be a string')
 
 
-def _grid_search_single(grid_scores, change, keep_fixed, ax, kind):
+def _grid_search_single(grid_scores, change, subset, ax, kind):
     # the logic of this function is to group the grid scores acording
     # to certain rules and subsequently remove the elements that we are
     # not interested in, until we have only the elements that the user
@@ -80,17 +79,17 @@ def _grid_search_single(grid_scores, change, keep_fixed, ax, kind):
     # now need need to filter out the grid_scores that the user
     # didn't select, for that we have to cases, the first one is when
     # the user explicitely selected some values
-    if keep_fixed:
+    if subset:
         # group the grid_scores based on the values the user selected
-        # in keep_fixed
-        groups = _group_by(grid_scores, _get_params_value(keep_fixed.keys()))
-        keys = _mapping_to_tuple_pairs(keep_fixed)
+        # in subset
+        groups = _group_by(grid_scores, _get_params_value(subset.keys()))
+        keys = _mapping_to_tuple_pairs(subset)
         groups = {k: v for k, v in _sorted_map_iter(groups) if k in keys}
         grid_scores = _flatten_list(groups.values())
         groups = _group_by(grid_scores, _get_params_value(params))
         if not groups:
             raise ValueError(('There wasn\'t any match with the data provided'
-                              ' check that the values in keep_fixed are'
+                              ' check that the values in subset are'
                               ' correct.'))
     # if the user didn't select any values don't filter anything
     # just group the grid_scores depending on the values they
@@ -138,31 +137,31 @@ def _grid_search_single(grid_scores, change, keep_fixed, ax, kind):
     return ax
 
 
-def _grid_search_double(grid_scores, change, keep_fixed, ax, cmap):
-    # if a value in keep_fixed was passed, use it to filter the groups
+def _grid_search_double(grid_scores, change, subset, ax, cmap):
+    # if a value in subset was passed, use it to filter the groups
     # if not use the set of parameters but remove the ones the user wants
     # to vary
-    if keep_fixed is not None:
-        groups = _group_by(grid_scores, _get_params_value(keep_fixed.keys()))
-        keys = _mapping_to_tuple_pairs(keep_fixed)
+    if subset is not None:
+        groups = _group_by(grid_scores, _get_params_value(subset.keys()))
+        keys = _mapping_to_tuple_pairs(subset)
         groups = {k: v for k, v in _sorted_map_iter(groups) if k in keys}
     else:
-        keep_fixed = list(grid_scores[0].parameters.keys())
+        subset = list(grid_scores[0].parameters.keys())
         for p in change:
             try:
-                keep_fixed.remove(p)
+                subset.remove(p)
             except ValueError:
                 raise ValueError('{} is not a valid parameter.'.format(p))
-        groups = _group_by(grid_scores, _get_params_value(keep_fixed))
+        groups = _group_by(grid_scores, _get_params_value(subset))
 
     # there should be just one group at this point
     if len(groups) > 1:
         raise ValueError(('More than one result matched your criteria.'
                           ' Make sure you specify parameters using change'
-                          ' and keep_fixed so only one group matches.'))
+                          ' and subset so only one group matches.'))
     elif len(groups) == 0:
         raise ValueError(('There wasn\'t any match with the data provided'
-                          ' check that the values in keep_fixed are correct.'))
+                          ' check that the values in subset are correct.'))
 
     grid_score = list(groups.values())[0]
 
