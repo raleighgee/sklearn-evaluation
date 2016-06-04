@@ -164,14 +164,10 @@ def _grid_search_double(grid_scores, change, keep_fixed, ax, cmap):
         raise ValueError(('There wasn\'t any match with the data provided'
                           ' check that the values in keep_fixed are correct.'))
 
-    group = list(groups.values())[0]
+    grid_score = list(groups.values())[0]
 
     # group by every possible combination in change
-    matrix_elements = _group_by(group, _get_params_value(change))
-
-    # for v in matrix_elements.values():
-    #     if len(v) > 1:
-    #         raise ValueError('Group with more than one element')
+    matrix_elements = _group_by(grid_score, _get_params_value(change))
 
     # on each group there must be only one element, get it
     matrix_elements = {k: v[0] for k, v in matrix_elements.items()}
